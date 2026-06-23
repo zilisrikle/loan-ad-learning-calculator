@@ -650,6 +650,7 @@
         const c = calc(row);
         const s = statusFor(row, c);
         const tr = document.createElement("tr");
+        tr.dataset.rowIndex = index;
         tr.innerHTML = `
           <td><input type="checkbox" data-index="${index}" data-key="enabled" ${row.enabled ? "checked" : ""}></td>
           <td>
@@ -673,17 +674,46 @@
           <td><input class="w-sm num" type="number" min="0" step="1" data-index="${index}" data-key="cpa" value="${row.cpa}"></td>
           <td><input class="w-xs num" type="number" min="1" step="1" data-index="${index}" data-key="units" value="${row.units}"></td>
           <td><input class="w-xs num" type="number" min="1" step="1" data-index="${index}" data-key="priority" value="${row.priority || index + 1}"></td>
-          <td class="num">${money(c.cpc, 2)}</td>
-          <td class="num">${number(c.impressions)}</td>
-          <td class="num">${number(c.clicks)}</td>
-          <td class="num">${number(c.installs, 1)}</td>
-          <td class="num">${number(c.applications, 1)}</td>
-          <td class="num">${pct(c.installToApplication, 1)}</td>
-          <td class="num">${money(c.learningSpend)}</td>
-          <td><span class="pill ${s.cls}">${s.text}</span></td>
+          <td class="num" data-output="cpc">${money(c.cpc, 2)}</td>
+          <td class="num" data-output="impressions">${number(c.impressions)}</td>
+          <td class="num" data-output="clicks">${number(c.clicks)}</td>
+          <td class="num" data-output="installs">${number(c.installs, 1)}</td>
+          <td class="num" data-output="applications">${number(c.applications, 1)}</td>
+          <td class="num" data-output="installToApplication">${pct(c.installToApplication, 1)}</td>
+          <td class="num" data-output="learningSpend">${money(c.learningSpend)}</td>
+          <td><span class="pill ${s.cls}" data-output="status">${s.text}</span></td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function refreshRow(index) {
+      const row = rows[index];
+      const tr = tbody.querySelector(`[data-row-index="${index}"]`);
+      if (!row || !tr) return;
+      const c = calc(row);
+      const s = statusFor(row, c);
+      const values = {
+        cpc: money(c.cpc, 2),
+        impressions: number(c.impressions),
+        clicks: number(c.clicks),
+        installs: number(c.installs, 1),
+        applications: number(c.applications, 1),
+        installToApplication: pct(c.installToApplication, 1),
+        learningSpend: money(c.learningSpend)
+      };
+      Object.entries(values).forEach(([key, value]) => {
+        tr.querySelector(`[data-output="${key}"]`).textContent = value;
+      });
+      const status = tr.querySelector('[data-output="status"]');
+      status.textContent = s.text;
+      status.className = `pill ${s.cls}`;
+      const budgetInput = tr.querySelector('[data-key="budget"]');
+      if (budgetMode === "learning") budgetInput.value = row.budget;
+    }
+
+    function refreshAllRows() {
+      rows.forEach((row, index) => refreshRow(index));
     }
 
     function summarize() {
@@ -776,6 +806,14 @@
       } else if (key === "budget") {
         rememberManualBudgets();
       }
+
+      if (event.type === "input" && target.type === "number") {
+        if (budgetMode === "learning") refreshAllRows();
+        else refreshRow(Number(index));
+        summarize();
+        return;
+      }
+
       renderRows();
       summarize();
     }
