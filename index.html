@@ -88,6 +88,46 @@
       gap: 12px;
     }
 
+    .mode-field { grid-column: 1 / -1; }
+
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      background: rgba(255,255,255,.06);
+    }
+
+    .mode-switch button {
+      min-height: 36px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #aeb8d3;
+      padding: 7px 10px;
+    }
+
+    .mode-switch button.active {
+      background: #fff;
+      color: var(--blue);
+    }
+
+    .mode-description {
+      grid-column: 1 / -1;
+      margin: -2px 0 0;
+      color: #aeb8d3;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    input:disabled {
+      color: #596170;
+      background: #edf0f5;
+      cursor: not-allowed;
+    }
+
     label {
       display: block;
       margin: 0 0 7px;
@@ -336,6 +376,13 @@
         <p class="subtitle">用于估算 Meta 与 Google 在现金贷/消费金融获客中的学习门槛、预算厚度和转化产出。默认值是拉美现金贷市场的示例量级，用于演示计算逻辑，不代表任何真实账户数据。</p>
       </div>
       <div class="global-panel">
+        <div class="mode-field">
+          <label>预算模式</label>
+          <div class="mode-switch" role="group" aria-label="预算分配模式">
+            <button type="button" id="manualMode" class="active" aria-pressed="true">手动分配</button>
+            <button type="button" id="learningMode" aria-pressed="false">学习门槛优先</button>
+          </div>
+        </div>
         <div>
           <label for="currency">币种</label>
           <select id="currency">
@@ -355,6 +402,11 @@
           <label for="testDays">测试天数</label>
           <input id="testDays" type="number" min="1" step="1" value="14">
         </div>
+        <div id="monthDaysField" hidden>
+          <label for="monthDays">当月天数</label>
+          <input id="monthDays" type="number" min="28" max="31" step="1" value="30">
+        </div>
+        <p class="mode-description" id="modeDescription">手动填写测试预算和各投放池预算。</p>
       </div>
     </div>
   </header>
@@ -362,7 +414,7 @@
   <main class="shell">
     <section class="summary" aria-label="summary metrics">
       <div class="card">
-        <span>分配预算</span>
+        <span>已分配预算</span>
         <strong id="sumSpend">-</strong>
         <small id="budgetUse">-</small>
       </div>
@@ -412,6 +464,7 @@
               <th class="num">CPI</th>
               <th class="num">申请 CPA</th>
               <th class="num">学习单元</th>
+              <th class="num">优先级</th>
               <th class="num">CPC</th>
               <th class="num">曝光</th>
               <th class="num">点击</th>
@@ -465,13 +518,15 @@
 
   <script>
     const defaults = [
-      { enabled: true, platform: "Google", path: "App Android", budget: 3800, cpm: 2.8, ctr: 1.35, cpi: .85, cpa: 18, units: 1 },
-      { enabled: true, platform: "Meta", path: "App Android", budget: 1700, cpm: 3.6, ctr: 1.05, cpi: 1.2, cpa: 22, units: 1 },
-      { enabled: true, platform: "Google", path: "OneLink", budget: 900, cpm: 3.2, ctr: 1.15, cpi: 1.1, cpa: 28, units: 1 },
-      { enabled: true, platform: "Meta", path: "H5", budget: 600, cpm: 4.1, ctr: .9, cpi: 0, cpa: 35, units: 1 }
+      { enabled: true, platform: "Google", path: "App Android", budget: 3800, cpm: 2.8, ctr: 1.35, cpi: .85, cpa: 18, units: 1, priority: 1 },
+      { enabled: true, platform: "Meta", path: "App Android", budget: 1700, cpm: 3.6, ctr: 1.05, cpi: 1.2, cpa: 22, units: 1, priority: 2 },
+      { enabled: true, platform: "Google", path: "OneLink", budget: 900, cpm: 3.2, ctr: 1.15, cpi: 1.1, cpa: 28, units: 1, priority: 3 },
+      { enabled: true, platform: "Meta", path: "H5", budget: 600, cpm: 4.1, ctr: .9, cpi: 0, cpa: 35, units: 1, priority: 4 }
     ];
 
     let rows = JSON.parse(JSON.stringify(defaults));
+    let budgetMode = "manual";
+    let manualBudgets = rows.map(row => row.budget);
     const tbody = document.querySelector("#rows");
 
     function symbol() {
@@ -518,6 +573,70 @@
       return { budget, cpm, ctr, cpi, cpa, units, impressions, clicks, cpc, installs, applications, installToApplication, learningSpend, learningRatio };
     }
 
+    function autoTestBudget() {
+      const monthBudget = Math.max(0, Number(document.querySelector("#monthBudget").value) || 0);
+      const monthDays = Math.min(31, Math.max(28, Number(document.querySelector("#monthDays").value) || 30));
+      const testDays = Math.max(1, Number(document.querySelector("#testDays").value) || 14);
+      return monthBudget / monthDays * testDays;
+    }
+
+    function allocateByLearningThreshold() {
+      const available = autoTestBudget();
+      document.querySelector("#testBudget").value = Math.round(available * 100) / 100;
+
+      rows.forEach(row => { row.budget = 0; });
+      const active = rows
+        .filter(row => row.enabled && Number(row.cpa) > 0)
+        .map((row, index) => ({ row, index, learningSpend: calc(row).learningSpend }))
+        .sort((a, b) => {
+          const priorityDifference = (Number(a.row.priority) || 99) - (Number(b.row.priority) || 99);
+          return priorityDifference || (Number(a.row.cpa) || Infinity) - (Number(b.row.cpa) || Infinity);
+        });
+
+      let remaining = available;
+      active.forEach(item => {
+        const allocation = Math.min(remaining, item.learningSpend);
+        item.row.budget = Math.round(allocation * 100) / 100;
+        remaining -= allocation;
+      });
+
+      if (remaining > 0 && active.length) {
+        const remainderToDistribute = remaining;
+        const weights = active.map(item => 1 / Math.max(0.01, Number(item.row.cpa) || 0.01));
+        const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+        active.forEach((item, index) => {
+          item.row.budget += remainderToDistribute * weights[index] / weightTotal;
+          item.row.budget = Math.round(item.row.budget * 100) / 100;
+        });
+        const allocated = rows.reduce((sum, row) => sum + (Number(row.budget) || 0), 0);
+        active[0].row.budget += Math.round((available - allocated) * 100) / 100;
+      }
+    }
+
+    function rememberManualBudgets() {
+      manualBudgets = rows.map(row => row.budget);
+    }
+
+    function restoreManualBudgets() {
+      rows.forEach((row, index) => {
+        row.budget = Number(manualBudgets[index]) || 0;
+      });
+    }
+
+    function syncBudgetMode() {
+      const automatic = budgetMode === "learning";
+      document.querySelector("#manualMode").classList.toggle("active", !automatic);
+      document.querySelector("#learningMode").classList.toggle("active", automatic);
+      document.querySelector("#manualMode").setAttribute("aria-pressed", String(!automatic));
+      document.querySelector("#learningMode").setAttribute("aria-pressed", String(automatic));
+      document.querySelector("#testBudget").disabled = automatic;
+      document.querySelector("#monthDaysField").hidden = !automatic;
+      document.querySelector("#modeDescription").textContent = automatic
+        ? "测试预算 = 月预算 / 当月天数 x 测试天数；先按优先级满足学习门槛，剩余预算按 CPA 倒数权重分配。"
+        : "手动填写测试预算和各投放池预算。";
+      if (automatic) allocateByLearningThreshold();
+    }
+
     function statusFor(row, c) {
       if (!row.enabled) return { text: "未启用", cls: "info" };
       if (c.learningRatio >= 1) return { text: "可达标", cls: "ok" };
@@ -547,12 +666,13 @@
               <option ${row.path === "OneLink" ? "selected" : ""}>OneLink</option>
             </select>
           </td>
-          <td><input class="w-md num" type="number" min="0" step="100" data-index="${index}" data-key="budget" value="${row.budget}"></td>
+          <td><input class="w-md num" type="number" min="0" step="100" data-index="${index}" data-key="budget" value="${row.budget}" ${budgetMode === "learning" ? "disabled" : ""}></td>
           <td><input class="w-sm num" type="number" min="0" step=".1" data-index="${index}" data-key="cpm" value="${row.cpm}"></td>
           <td><input class="w-xs num" type="number" min="0" step=".05" data-index="${index}" data-key="ctr" value="${row.ctr}"></td>
           <td><input class="w-xs num" type="number" min="0" step=".05" data-index="${index}" data-key="cpi" value="${row.cpi}"></td>
           <td><input class="w-sm num" type="number" min="0" step="1" data-index="${index}" data-key="cpa" value="${row.cpa}"></td>
           <td><input class="w-xs num" type="number" min="1" step="1" data-index="${index}" data-key="units" value="${row.units}"></td>
+          <td><input class="w-xs num" type="number" min="1" step="1" data-index="${index}" data-key="priority" value="${row.priority || index + 1}"></td>
           <td class="num">${money(c.cpc, 2)}</td>
           <td class="num">${number(c.impressions)}</td>
           <td class="num">${number(c.clicks)}</td>
@@ -651,37 +771,67 @@
       } else {
         row[key] = Number(target.value);
       }
+      if (budgetMode === "learning") {
+        allocateByLearningThreshold();
+      } else if (key === "budget") {
+        rememberManualBudgets();
+      }
       renderRows();
       summarize();
     }
 
     document.querySelector("#rows").addEventListener("input", updateFromInput);
     document.querySelector("#rows").addEventListener("change", updateFromInput);
-    ["currency", "testBudget", "monthBudget", "testDays"].forEach(id => {
+    ["currency", "testBudget", "monthBudget", "testDays", "monthDays"].forEach(id => {
       document.querySelector("#" + id).addEventListener("input", () => {
+        if (budgetMode === "learning") allocateByLearningThreshold();
         renderRows();
         summarize();
       });
       document.querySelector("#" + id).addEventListener("change", () => {
+        if (budgetMode === "learning") allocateByLearningThreshold();
         renderRows();
         summarize();
       });
     });
+    document.querySelector("#manualMode").addEventListener("click", () => {
+      if (budgetMode === "manual") return;
+      budgetMode = "manual";
+      restoreManualBudgets();
+      syncBudgetMode();
+      renderRows();
+      summarize();
+    });
+    document.querySelector("#learningMode").addEventListener("click", () => {
+      if (budgetMode === "learning") return;
+      rememberManualBudgets();
+      budgetMode = "learning";
+      syncBudgetMode();
+      renderRows();
+      summarize();
+    });
     document.querySelector("#addRow").addEventListener("click", () => {
-      rows.push({ enabled: true, platform: "Google", path: "App Android", budget: 500, cpm: 3, ctr: 1.1, cpi: 1, cpa: 24, units: 1 });
+      rows.push({ enabled: true, platform: "Google", path: "App Android", budget: 500, cpm: 3, ctr: 1.1, cpi: 1, cpa: 24, units: 1, priority: rows.length + 1 });
+      manualBudgets.push(500);
+      if (budgetMode === "learning") allocateByLearningThreshold();
       renderRows();
       summarize();
     });
     document.querySelector("#resetRows").addEventListener("click", () => {
       rows = JSON.parse(JSON.stringify(defaults));
+      manualBudgets = rows.map(row => row.budget);
       document.querySelector("#currency").value = "USD";
       document.querySelector("#testBudget").value = 7000;
       document.querySelector("#monthBudget").value = 15500;
       document.querySelector("#testDays").value = 14;
+      document.querySelector("#monthDays").value = 30;
+      budgetMode = "manual";
+      syncBudgetMode();
       renderRows();
       summarize();
     });
 
+    syncBudgetMode();
     renderRows();
     summarize();
   </script>
