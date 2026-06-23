@@ -333,7 +333,7 @@
       <div>
         <p class="eyebrow">Media Buying Calculator</p>
         <h1>Ad Learning<br>Planner</h1>
-        <p class="subtitle">用于估算 Meta 与 Google App Campaign 在现金贷/消费金融获客中的学习门槛、预算厚度和转化产出。默认值是拉美现金贷市场的示例量级，用于演示计算逻辑，不代表任何真实账户数据。</p>
+        <p class="subtitle">用于估算 Meta 与 Google 在现金贷/消费金融获客中的学习门槛、预算厚度和转化产出。默认值是拉美现金贷市场的示例量级，用于演示计算逻辑，不代表任何真实账户数据。</p>
       </div>
       <div class="global-panel">
         <div>
@@ -341,9 +341,6 @@
           <select id="currency">
             <option value="USD" selected>USD</option>
             <option value="HKD">HKD</option>
-            <option value="MXN">MXN</option>
-            <option value="BRL">BRL</option>
-            <option value="COP">COP</option>
           </select>
         </div>
         <div>
@@ -395,7 +392,7 @@
       <div class="panel-head">
         <div>
           <h2>投放池输入与测算</h2>
-          <div class="hint">可按平台、系统、预算、CPM、CTR、CPI、申请成功 CPA 调整。学习单元代表 Campaign 或 Ad Set 数量。</div>
+          <div class="hint">可按平台、投放路径、预算、CPM、CTR、CPI、申请成功 CPA 调整。学习单元代表 Campaign 或 Ad Set 数量。</div>
         </div>
         <div class="actions">
           <button id="addRow">新增投放池</button>
@@ -408,7 +405,7 @@
             <tr>
               <th>启用</th>
               <th>平台</th>
-              <th>系统</th>
+              <th>投放路径</th>
               <th class="num">预算</th>
               <th class="num">CPM</th>
               <th class="num">CTR %</th>
@@ -449,7 +446,7 @@
           </div>
           <div class="note">
             <strong>Android / iOS</strong>
-            <div>双端拆分后，每个端都是独立学习池。预算不足时，优先保证主力端拿到足够事件，再小预算验证另一个端。</div>
+            <div>双端拆分后，每个端都是独立学习池。</div>
           </div>
         </div>
       </div>
@@ -468,10 +465,10 @@
 
   <script>
     const defaults = [
-      { enabled: true, platform: "Google", os: "Android", budget: 4200, cpm: 2.8, ctr: 1.35, cpi: .85, cpa: 18, units: 1 },
-      { enabled: true, platform: "Meta", os: "Android", budget: 2100, cpm: 3.6, ctr: 1.05, cpi: 1.2, cpa: 22, units: 1 },
-      { enabled: true, platform: "Google", os: "iOS", budget: 500, cpm: 3.4, ctr: 1.05, cpi: 1.6, cpa: 34, units: 1 },
-      { enabled: true, platform: "Meta", os: "iOS", budget: 200, cpm: 4.2, ctr: .85, cpi: 2.1, cpa: 42, units: 1 }
+      { enabled: true, platform: "Google", path: "App Android", budget: 3800, cpm: 2.8, ctr: 1.35, cpi: .85, cpa: 18, units: 1 },
+      { enabled: true, platform: "Meta", path: "App Android", budget: 1700, cpm: 3.6, ctr: 1.05, cpi: 1.2, cpa: 22, units: 1 },
+      { enabled: true, platform: "Google", path: "OneLink", budget: 900, cpm: 3.2, ctr: 1.15, cpi: 1.1, cpa: 28, units: 1 },
+      { enabled: true, platform: "Meta", path: "H5", budget: 600, cpm: 4.1, ctr: .9, cpi: 0, cpa: 35, units: 1 }
     ];
 
     let rows = JSON.parse(JSON.stringify(defaults));
@@ -543,10 +540,11 @@
             </select>
           </td>
           <td>
-            <select data-index="${index}" data-key="os" class="w-md">
-              <option ${row.os === "Android" ? "selected" : ""}>Android</option>
-              <option ${row.os === "iOS" ? "selected" : ""}>iOS</option>
-              <option ${row.os === "Both" ? "selected" : ""}>Both</option>
+            <select data-index="${index}" data-key="path" class="w-md">
+              <option ${row.path === "App Android" ? "selected" : ""}>App Android</option>
+              <option ${row.path === "App iOS" ? "selected" : ""}>App iOS</option>
+              <option ${row.path === "H5" ? "selected" : ""}>H5</option>
+              <option ${row.path === "OneLink" ? "selected" : ""}>OneLink</option>
             </select>
           </td>
           <td><input class="w-md num" type="number" min="0" step="100" data-index="${index}" data-key="budget" value="${row.budget}"></td>
@@ -602,14 +600,14 @@
       if (best) {
         notes.push({
           title: "优先放量池",
-          body: `${best.row.platform} ${best.row.os} 当前申请 CPA 为 ${money(best.c.cpa, 2)}，预算可优先向它集中；前提是后续批核、签约、放款质量不低于其他池。`
+          body: `${best.row.platform} ${best.row.path} 当前申请 CPA 为 ${money(best.c.cpa, 2)}，预算可优先向它集中；前提是后续批核、签约、放款质量不低于其他池。`
         });
       }
 
       if (thin.length) {
         notes.push({
           title: "学习偏薄",
-          body: `${thin.map(item => item.row.platform + " " + item.row.os).join("、")} 没有接近学习所需预算。预算不足时，减少 Campaign / Ad Set 拆分通常比平均分配更重要。`
+          body: `${thin.map(item => item.row.platform + " " + item.row.path).join("、")} 没有接近学习所需预算。预算不足时，减少 Campaign / Ad Set 拆分通常比平均分配更重要。`
         });
       }
 
@@ -648,7 +646,7 @@
       const row = rows[Number(index)];
       if (key === "enabled") {
         row[key] = target.checked;
-      } else if (key === "platform" || key === "os") {
+      } else if (key === "platform" || key === "path") {
         row[key] = target.value;
       } else {
         row[key] = Number(target.value);
@@ -670,7 +668,7 @@
       });
     });
     document.querySelector("#addRow").addEventListener("click", () => {
-      rows.push({ enabled: true, platform: "Google", os: "Android", budget: 500, cpm: 3, ctr: 1.1, cpi: 1, cpa: 24, units: 1 });
+      rows.push({ enabled: true, platform: "Google", path: "App Android", budget: 500, cpm: 3, ctr: 1.1, cpi: 1, cpa: 24, units: 1 });
       renderRows();
       summarize();
     });
