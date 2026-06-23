@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ad Learning Calculator</title>
+  <style>
+    :root {
+      --black: #050505;
+      --ink: #101114;
+      --muted: #68707d;
+      --line: #e4e7ed;
+      --blue: #002fa7;
+      --blue-2: #0647ff;
+      --blue-soft: #eaf0ff;
+      --paper: #ffffff;
+      --wash: #f5f6f8;
+      --good: #087a4f;
+      --good-bg: #e7f7ef;
+      --warn: #9b5a00;
+      --warn-bg: #fff1d8;
+      --bad: #b4233a;
+      --bad-bg: #ffe5ea;
+      --shadow: 0 24px 70px rgba(5, 5, 5, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(0,47,167,.08), transparent 34%),
+        radial-gradient(circle at 85% 6%, rgba(0,47,167,.12), transparent 28%),
+        var(--wash);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    .hero {
+      background: var(--black);
+      color: #fff;
+      border-bottom: 6px solid var(--blue);
+    }
+
+    .hero-inner {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 30px 28px 26px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 390px;
+      gap: 26px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: #b7c8ff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 920px;
+      margin: 16px 0 0;
+      color: #d8dde8;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .global-panel {
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .hero label { color: #aeb8d3; }
+
+    input, select {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--blue-2);
+      box-shadow: 0 0 0 3px rgba(6,71,255,.14);
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      min-height: 18px;
+      accent-color: var(--blue);
+    }
+
+    .shell {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 24px 28px 42px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    .card, .panel {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .card {
+      min-height: 112px;
+      padding: 16px;
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+    }
+
+    .card span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .card strong {
+      display: block;
+      font-size: clamp(24px, 2.6vw, 38px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .card small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .panel-head {
+      padding: 17px 18px 13px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 13px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1260px;
+    }
+
+    th, td {
+      padding: 10px 9px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      background: #fbfcff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    td input, td select {
+      min-height: 34px;
+      padding: 6px 8px;
+      border-radius: 8px;
+    }
+
+    .num { text-align: right; }
+    .w-xs { width: 64px; }
+    .w-sm { width: 88px; }
+    .w-md { width: 116px; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 76px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-weight: 850;
+      font-size: 12px;
+    }
+
+    .ok { color: var(--good); background: var(--good-bg); }
+    .warn { color: var(--warn); background: var(--warn-bg); }
+    .bad { color: var(--bad); background: var(--bad-bg); }
+    .info { color: var(--blue); background: var(--blue-soft); }
+
+    .insights {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .notes {
+      padding: 16px 18px 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .note {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px 14px;
+      background: #fff;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .formula {
+      margin-top: 5px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1120px) {
+      .hero-inner, .insights { grid-template-columns: 1fr; }
+      .global-panel { max-width: 560px; }
+      .summary { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+    }
+
+    @media (max-width: 650px) {
+      .hero-inner, .shell { padding-left: 16px; padding-right: 16px; }
+      .global-panel, .summary { grid-template-columns: 1fr; }
+      .panel-head { align-items: flex-start; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <p class="eyebrow">Media Buying Calculator</p>
+        <h1>Ad Learning<br>Planner</h1>
+        <p class="subtitle">用于估算 Meta 与 Google App Campaign 在现金贷/消费金融获客中的学习门槛、预算厚度和转化产出。默认值是拉美现金贷市场的示例量级，用于演示计算逻辑，不代表任何真实账户数据。</p>
+      </div>
+      <div class="global-panel">
+        <div>
+          <label for="currency">币种</label>
+          <select id="currency">
+            <option value="USD" selected>USD</option>
+            <option value="HKD">HKD</option>
+            <option value="MXN">MXN</option>
+            <option value="BRL">BRL</option>
+            <option value="COP">COP</option>
+          </select>
+        </div>
+        <div>
+          <label for="testBudget">测试预算</label>
+          <input id="testBudget" type="number" min="0" step="100" value="7000">
+        </div>
+        <div>
+          <label for="monthBudget">月预算</label>
+          <input id="monthBudget" type="number" min="0" step="100" value="15500">
+        </div>
+        <div>
+          <label for="testDays">测试天数</label>
+          <input id="testDays" type="number" min="1" step="1" value="14">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="summary" aria-label="summary metrics">
+      <div class="card">
+        <span>分配预算</span>
+        <strong id="sumSpend">-</strong>
+        <small id="budgetUse">-</small>
+      </div>
+      <div class="card">
+        <span>预计申请成功</span>
+        <strong id="sumApplications">-</strong>
+        <small id="blendedCpa">-</small>
+      </div>
+      <div class="card">
+        <span>预计安装</span>
+        <strong id="sumInstalls">-</strong>
+        <small id="blendedCpi">-</small>
+      </div>
+      <div class="card">
+        <span>预计点击</span>
+        <strong id="sumClicks">-</strong>
+        <small id="blendedCtr">-</small>
+      </div>
+      <div class="card">
+        <span>学习达标池</span>
+        <strong id="learningPass">-</strong>
+        <small>按每个 Campaign / Ad Set 独立计算</small>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>投放池输入与测算</h2>
+          <div class="hint">可按平台、系统、预算、CPM、CTR、CPI、申请成功 CPA 调整。学习单元代表 Campaign 或 Ad Set 数量。</div>
+        </div>
+        <div class="actions">
+          <button id="addRow">新增投放池</button>
+          <button id="resetRows" class="primary">恢复示例</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>启用</th>
+              <th>平台</th>
+              <th>系统</th>
+              <th class="num">预算</th>
+              <th class="num">CPM</th>
+              <th class="num">CTR %</th>
+              <th class="num">CPI</th>
+              <th class="num">申请 CPA</th>
+              <th class="num">学习单元</th>
+              <th class="num">CPC</th>
+              <th class="num">曝光</th>
+              <th class="num">点击</th>
+              <th class="num">安装</th>
+              <th class="num">申请成功</th>
+              <th class="num">安装到申请</th>
+              <th class="num">学习所需预算</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="insights">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>学习门槛逻辑</h2>
+          <div class="hint">低频事件要集中预算，避免双端和多受众拆太碎。</div>
+        </div>
+        <div class="notes">
+          <div class="note">
+            <strong>Meta</strong>
+            <div>按常见投放实践，Ad Set 在学习阶段通常需要约 50 个优化事件。这里用测试周期内每个 Ad Set 50 个申请成功事件来估算预算厚度。</div>
+            <div class="formula">Meta 学习预算 = 申请成功 CPA x 50 x Ad Set 数</div>
+          </div>
+          <div class="note">
+            <strong>Google App Campaign</strong>
+            <div>Google 官方建议：优化 App 内事件时，选择每天至少 10 个不同用户完成的事件；日预算至少为目标 CPA 的 10 倍。</div>
+            <div class="formula">Google 学习预算 = 申请成功 CPA x 10 x 测试天数 x Campaign 数</div>
+          </div>
+          <div class="note">
+            <strong>Android / iOS</strong>
+            <div>双端拆分后，每个端都是独立学习池。预算不足时，优先保证主力端拿到足够事件，再小预算验证另一个端。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>自动建议</h2>
+          <div class="hint">根据当前输入实时生成。</div>
+        </div>
+        <div class="notes" id="recommendations"></div>
+      </div>
+    </section>
+
+    <p class="footer">说明：本工具只用于投放规划和学习预算估算，不替代广告平台后台、MMP、后端风控和财务 LTV 报表。贷款产品投放还应单独检查当地金融广告合规、披露、牌照和隐私要求。</p>
+  </main>
+
+  <script>
+    const defaults = [
+      { enabled: true, platform: "Google", os: "Android", budget: 4200, cpm: 2.8, ctr: 1.35, cpi: .85, cpa: 18, units: 1 },
+      { enabled: true, platform: "Meta", os: "Android", budget: 2100, cpm: 3.6, ctr: 1.05, cpi: 1.2, cpa: 22, units: 1 },
+      { enabled: true, platform: "Google", os: "iOS", budget: 500, cpm: 3.4, ctr: 1.05, cpi: 1.6, cpa: 34, units: 1 },
+      { enabled: true, platform: "Meta", os: "iOS", budget: 200, cpm: 4.2, ctr: .85, cpi: 2.1, cpa: 42, units: 1 }
+    ];
+
+    let rows = JSON.parse(JSON.stringify(defaults));
+    const tbody = document.querySelector("#rows");
+
+    function symbol() {
+      return document.querySelector("#currency").value || "USD";
+    }
+
+    function money(value, digits = 0) {
+      if (!isFinite(value)) return "-";
+      return symbol() + " " + value.toLocaleString("en-US", {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits
+      });
+    }
+
+    function number(value, digits = 0) {
+      if (!isFinite(value)) return "-";
+      return value.toLocaleString("en-US", {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits
+      });
+    }
+
+    function pct(value, digits = 1) {
+      if (!isFinite(value)) return "-";
+      return value.toFixed(digits) + "%";
+    }
+
+    function calc(row) {
+      const budget = Math.max(0, Number(row.budget) || 0);
+      const cpm = Math.max(0, Number(row.cpm) || 0);
+      const ctr = Math.max(0, Number(row.ctr) || 0) / 100;
+      const cpi = Math.max(0, Number(row.cpi) || 0);
+      const cpa = Math.max(0, Number(row.cpa) || 0);
+      const units = Math.max(1, Number(row.units) || 1);
+      const days = Math.max(1, Number(document.querySelector("#testDays").value) || 14);
+      const impressions = cpm > 0 ? budget / cpm * 1000 : 0;
+      const clicks = impressions * ctr;
+      const cpc = clicks > 0 ? budget / clicks : 0;
+      const installs = cpi > 0 ? budget / cpi : 0;
+      const applications = cpa > 0 ? budget / cpa : 0;
+      const installToApplication = installs > 0 ? applications / installs * 100 : 0;
+      const learningSpend = row.platform === "Meta" ? cpa * 50 * units : cpa * 10 * days * units;
+      const learningRatio = learningSpend > 0 ? budget / learningSpend : 0;
+      return { budget, cpm, ctr, cpi, cpa, units, impressions, clicks, cpc, installs, applications, installToApplication, learningSpend, learningRatio };
+    }
+
+    function statusFor(row, c) {
+      if (!row.enabled) return { text: "未启用", cls: "info" };
+      if (c.learningRatio >= 1) return { text: "可达标", cls: "ok" };
+      if (c.learningRatio >= .65) return { text: "接近", cls: "warn" };
+      return { text: "偏薄", cls: "bad" };
+    }
+
+    function renderRows() {
+      tbody.innerHTML = "";
+      rows.forEach((row, index) => {
+        const c = calc(row);
+        const s = statusFor(row, c);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="checkbox" data-index="${index}" data-key="enabled" ${row.enabled ? "checked" : ""}></td>
+          <td>
+            <select data-index="${index}" data-key="platform" class="w-md">
+              <option ${row.platform === "Google" ? "selected" : ""}>Google</option>
+              <option ${row.platform === "Meta" ? "selected" : ""}>Meta</option>
+            </select>
+          </td>
+          <td>
+            <select data-index="${index}" data-key="os" class="w-md">
+              <option ${row.os === "Android" ? "selected" : ""}>Android</option>
+              <option ${row.os === "iOS" ? "selected" : ""}>iOS</option>
+              <option ${row.os === "Both" ? "selected" : ""}>Both</option>
+            </select>
+          </td>
+          <td><input class="w-md num" type="number" min="0" step="100" data-index="${index}" data-key="budget" value="${row.budget}"></td>
+          <td><input class="w-sm num" type="number" min="0" step=".1" data-index="${index}" data-key="cpm" value="${row.cpm}"></td>
+          <td><input class="w-xs num" type="number" min="0" step=".05" data-index="${index}" data-key="ctr" value="${row.ctr}"></td>
+          <td><input class="w-xs num" type="number" min="0" step=".05" data-index="${index}" data-key="cpi" value="${row.cpi}"></td>
+          <td><input class="w-sm num" type="number" min="0" step="1" data-index="${index}" data-key="cpa" value="${row.cpa}"></td>
+          <td><input class="w-xs num" type="number" min="1" step="1" data-index="${index}" data-key="units" value="${row.units}"></td>
+          <td class="num">${money(c.cpc, 2)}</td>
+          <td class="num">${number(c.impressions)}</td>
+          <td class="num">${number(c.clicks)}</td>
+          <td class="num">${number(c.installs, 1)}</td>
+          <td class="num">${number(c.applications, 1)}</td>
+          <td class="num">${pct(c.installToApplication, 1)}</td>
+          <td class="num">${money(c.learningSpend)}</td>
+          <td><span class="pill ${s.cls}">${s.text}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function summarize() {
+      const active = rows.filter(row => row.enabled).map(row => ({ row, c: calc(row) }));
+      const spend = active.reduce((sum, item) => sum + item.c.budget, 0);
+      const applications = active.reduce((sum, item) => sum + item.c.applications, 0);
+      const installs = active.reduce((sum, item) => sum + item.c.installs, 0);
+      const clicks = active.reduce((sum, item) => sum + item.c.clicks, 0);
+      const impressions = active.reduce((sum, item) => sum + item.c.impressions, 0);
+      const pass = active.filter(item => item.c.learningRatio >= 1).length;
+      const testBudget = Number(document.querySelector("#testBudget").value) || 0;
+
+      document.querySelector("#sumSpend").textContent = money(spend);
+      document.querySelector("#budgetUse").textContent = testBudget > 0 ? `${pct(spend / testBudget * 100, 1)} of test budget` : "未设置测试预算";
+      document.querySelector("#sumApplications").textContent = number(applications, 1);
+      document.querySelector("#blendedCpa").textContent = applications > 0 ? `综合申请 CPA ${money(spend / applications, 2)}` : "缺少申请 CPA";
+      document.querySelector("#sumInstalls").textContent = number(installs, 1);
+      document.querySelector("#blendedCpi").textContent = installs > 0 ? `综合 CPI ${money(spend / installs, 2)}` : "缺少 CPI";
+      document.querySelector("#sumClicks").textContent = number(clicks, 0);
+      document.querySelector("#blendedCtr").textContent = impressions > 0 ? `综合 CTR ${pct(clicks / impressions * 100, 2)}` : "缺少 CPM / CTR";
+      document.querySelector("#learningPass").textContent = `${pass}/${active.length}`;
+
+      renderRecommendations(active, spend, applications, testBudget);
+    }
+
+    function renderRecommendations(active, spend, applications, testBudget) {
+      const box = document.querySelector("#recommendations");
+      const sorted = [...active].sort((a, b) => a.c.cpa - b.c.cpa);
+      const best = sorted[0];
+      const thin = active.filter(item => item.c.learningRatio < .65);
+      const overBudget = testBudget > 0 && spend > testBudget;
+      const notes = [];
+
+      if (best) {
+        notes.push({
+          title: "优先放量池",
+          body: `${best.row.platform} ${best.row.os} 当前申请 CPA 为 ${money(best.c.cpa, 2)}，预算可优先向它集中；前提是后续批核、签约、放款质量不低于其他池。`
+        });
+      }
+
+      if (thin.length) {
+        notes.push({
+          title: "学习偏薄",
+          body: `${thin.map(item => item.row.platform + " " + item.row.os).join("、")} 没有接近学习所需预算。预算不足时，减少 Campaign / Ad Set 拆分通常比平均分配更重要。`
+        });
+      }
+
+      if (overBudget) {
+        notes.push({
+          title: "超过测试预算",
+          body: `当前表格预算比测试预算多 ${money(spend - testBudget, 2)}，需要下调或关闭低优先级池。`
+        });
+      } else if (testBudget > spend) {
+        notes.push({
+          title: "剩余测试预算",
+          body: `还有 ${money(testBudget - spend, 2)} 未分配。建议优先补给申请 CPA 更低且接近学习门槛的池。`
+        });
+      }
+
+      if (applications > 0) {
+        notes.push({
+          title: "当前综合结果",
+          body: `预计测试期申请成功 ${number(applications, 1)} 个，综合申请 CPA 约 ${money(spend / applications, 2)}。`
+        });
+      }
+
+      box.innerHTML = notes.map(note => `
+        <div class="note">
+          <strong>${note.title}</strong>
+          <div>${note.body}</div>
+        </div>
+      `).join("");
+    }
+
+    function updateFromInput(event) {
+      const target = event.target;
+      const index = target.dataset.index;
+      const key = target.dataset.key;
+      if (index === undefined || !key) return;
+      const row = rows[Number(index)];
+      if (key === "enabled") {
+        row[key] = target.checked;
+      } else if (key === "platform" || key === "os") {
+        row[key] = target.value;
+      } else {
+        row[key] = Number(target.value);
+      }
+      renderRows();
+      summarize();
+    }
+
+    document.querySelector("#rows").addEventListener("input", updateFromInput);
+    document.querySelector("#rows").addEventListener("change", updateFromInput);
+    ["currency", "testBudget", "monthBudget", "testDays"].forEach(id => {
+      document.querySelector("#" + id).addEventListener("input", () => {
+        renderRows();
+        summarize();
+      });
+      document.querySelector("#" + id).addEventListener("change", () => {
+        renderRows();
+        summarize();
+      });
+    });
+    document.querySelector("#addRow").addEventListener("click", () => {
+      rows.push({ enabled: true, platform: "Google", os: "Android", budget: 500, cpm: 3, ctr: 1.1, cpi: 1, cpa: 24, units: 1 });
+      renderRows();
+      summarize();
+    });
+    document.querySelector("#resetRows").addEventListener("click", () => {
+      rows = JSON.parse(JSON.stringify(defaults));
+      document.querySelector("#currency").value = "USD";
+      document.querySelector("#testBudget").value = 7000;
+      document.querySelector("#monthBudget").value = 15500;
+      document.querySelector("#testDays").value = 14;
+      renderRows();
+      summarize();
+    });
+
+    renderRows();
+    summarize();
+  </script>
+</body>
+</html>
